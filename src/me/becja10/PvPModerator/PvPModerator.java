@@ -10,9 +10,12 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
@@ -26,6 +29,7 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	public final static Logger logger = Logger.getLogger("Minecraft");
 	
 	private HashMap<UUID, Long> blockedPlayers;
+	private HashMap<UUID, Long> recentlyWarned;
 
 	
 	private String configPath;
@@ -73,6 +77,7 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		NewbieStorage.setUpStorage(this, logger);
 		
 		blockedPlayers = NewbieStorage.loadStorage();
+		recentlyWarned = new HashMap<UUID, Long>();
 		
 		manager.registerEvents(this, this);
 		
@@ -105,6 +110,24 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	public void onTP(PlayerTeleportEvent event){
 		if(event.getCause() == TeleportCause.COMMAND || event.getCause() == TeleportCause.PLUGIN){
 			addToBlocked(event.getPlayer().getUniqueId(), tpBuffer);
+		}
+	}
+	
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onDamage(EntityDamageByEntityEvent event){
+		Player attacker = null;
+		Player defender = null;
+		
+		if(event.getEntity() instanceof Player)
+			defender = (Player) event.getEntity();
+		
+		if(event.getDamager() instanceof Player)
+			attacker = (Player) event.getDamager();
+		
+		if(event.getDamager() instanceof Arrow){
+			Arrow arrow = (Arrow) event.getDamager();
+			if(arrow.getShooter() instanceof Player)
+				attacker = (Player) arrow.getShooter();
 		}
 	}
 	
