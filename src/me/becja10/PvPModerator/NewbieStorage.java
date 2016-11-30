@@ -61,8 +61,8 @@ public class NewbieStorage {
 		saveNewbieStorages();
 	}
 	
-	public static HashMap<UUID, Long> loadStorage(){
-		HashMap<UUID, Long> ret = new HashMap<UUID, Long>();
+	public static HashMap<UUID, BlockedPlayer> loadStorage(){
+		HashMap<UUID, BlockedPlayer> ret = new HashMap<UUID, BlockedPlayer>();
 		boolean needSave = false;
 		for(String key : config.getKeys(false)){
 			UUID id;
@@ -78,7 +78,7 @@ public class NewbieStorage {
 			long time = config.getLong(key, 0);
 			//if the time stored is less than now, they aren't a newbie anymore
 			if(time > System.currentTimeMillis())
-				ret.put(id, time);
+				ret.put(id, new BlockedPlayer(time, BlockedPlayer.NEW_PLAYER));
 		}
 		
 		if(needSave)

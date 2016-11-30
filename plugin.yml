@@ -1,0 +1,16 @@
+name: PvPModerator
+version: 1.0
+main: me.becja10.PvPModerator.PvPModerator
+softdepend: []
+description: A plugin that helps protect new players and those recently teleported
+commands:
+  pvpmodreload:
+    description: Reloads the plugin
+    usage: /<command>
+  removeprotection:
+    description: Removes the players pvp protection
+    usage: /<command>
+  AmIProtected:
+    description: Tells you if you are protected or not
+    usage: /<command>
+  
