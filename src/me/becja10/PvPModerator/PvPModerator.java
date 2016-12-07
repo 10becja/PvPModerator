@@ -72,8 +72,8 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		config = YamlConfiguration.loadConfiguration(new File(configPath));
 		outConfig = new YamlConfiguration();
 		
-		tpBuffer = config.getLong(_tpBuffer, 15) * 1000L;
-		newPlayerBuffer = config.getLong(_newPlayerBuffer, 3600) * 1000L;
+		tpBuffer = config.getLong(_tpBuffer, 15);
+		newPlayerBuffer = config.getLong(_newPlayerBuffer, 3600);
 		
 		allowNewbieCancel = config.getBoolean(_newbieCancel, true);
 		
@@ -81,7 +81,10 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		outConfig.set(_newPlayerBuffer, newPlayerBuffer);
 		outConfig.set(_newbieCancel, allowNewbieCancel);
 		
-		saveConfig(outConfig, configPath);		
+		saveConfig(outConfig, configPath);
+		
+		tpBuffer *= 1000L; //convert to ms
+		newPlayerBuffer *= 1000L; //convert to ms		
 	}
 	
 	private void saveConfig(FileConfiguration config, String path)
@@ -237,14 +240,16 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			//warn if they either aren't in the list, or they weren't warned in the last 5 seconds
 			if(vt == null || vt <= System.currentTimeMillis()){
 				recentlyWarned.put(vic.getUniqueId(), System.currentTimeMillis() + 5000);//warn them again in 5 seconds
-				vic.sendMessage(v.getWarnMessage(true));
+				vic.sendMessage(v.getWarnMessage(true, null));
+				if(p == null)
+					perp.sendMessage(v.getWarnMessage(false, v));
 			}
 		}
 		if(p != null){
 			Long pt = recentlyWarned.get(perp.getUniqueId());
 			if(pt == null || pt <= System.currentTimeMillis()){
 				recentlyWarned.put(perp.getUniqueId(), System.currentTimeMillis() + 5000);
-				perp.sendMessage(p.getWarnMessage(false));
+				perp.sendMessage(p.getWarnMessage(false, v));
 			}
 		}
 	}

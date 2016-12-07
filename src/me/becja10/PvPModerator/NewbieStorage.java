@@ -43,7 +43,7 @@ public class NewbieStorage {
 	}
 	
 	public static void setUpStorage(JavaPlugin plugin, Logger log){
-		path = plugin.getDataFolder().getAbsolutePath()	+ File.separator + "NewbieStorages".toLowerCase();
+		path = plugin.getDataFolder().getAbsolutePath()	+ File.separator + "NewbieStorages.yml".toLowerCase();
 		reloadNewbieStorages();		
 	}
 	
