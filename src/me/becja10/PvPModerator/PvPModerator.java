@@ -169,7 +169,11 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		if(event.isCancelled())
 			return;
 		if(event.getCause() == TeleportCause.COMMAND || event.getCause() == TeleportCause.PLUGIN){
-			addToBlocked(event.getPlayer().getUniqueId(), tpBuffer, BlockedPlayer.TP_EVENT);
+			BlockedPlayer bp = blockedPlayers.get(event.getPlayer().getUniqueId());
+			//don't put in list if new player because it breaks the newbie timing
+			if(bp == null || bp.reason == BlockedPlayer.TP_EVENT){
+				addToBlocked(event.getPlayer().getUniqueId(), tpBuffer, BlockedPlayer.TP_EVENT);
+			}
 		}
 	}
 	
