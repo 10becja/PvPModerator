@@ -5,12 +5,9 @@ import org.bukkit.ChatColor;
 public class BlockedPlayer {
 
 	public long time;
-	public int reason;
+	public BlockedReason reason;
 	
-	public static final int NEW_PLAYER = 0;
-	public static final int TP_EVENT = 1;
-		
-	public BlockedPlayer(long l, int r){
+	public BlockedPlayer(long l, BlockedReason r){
 		time = l;
 		reason = r;
 	}
@@ -21,11 +18,11 @@ public class BlockedPlayer {
 		
 		if(isTarget){
 			switch(reason){
-			case NEW_PLAYER:
+			case NewPlayer:
 				ret = ChatColor.GREEN + "You're protected from PvP because you are new. Use " + 
 					  ChatColor.YELLOW + "/removeprotection" + ChatColor.GREEN + " if you wish to PvP.";
 				break;
-			case TP_EVENT:
+			case TPEvent:
 				ret = ChatColor.GREEN + "You've recently teleported and must wait before fighting.";
 				break;
 			}
@@ -37,10 +34,10 @@ public class BlockedPlayer {
 			}
 			else{			
 				switch(reason){
-				case NEW_PLAYER:
+				case NewPlayer:
 					ret = ChatColor.RED + "This player is new! You can't kill them yet.";
 					break;
-				case TP_EVENT:
+				case TPEvent:
 					ret = ChatColor.RED + "This player is in tp cooldown. You can't attack them yet.";
 					break;
 				}

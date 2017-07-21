@@ -78,7 +78,7 @@ public class NewbieStorage {
 			long time = config.getLong(key, 0);
 			//if the time stored is less than now, they aren't a newbie anymore
 			if(time > System.currentTimeMillis())
-				ret.put(id, new BlockedPlayer(time, BlockedPlayer.NEW_PLAYER));
+				ret.put(id, new BlockedPlayer(time, BlockedReason.NewPlayer));
 		}
 		
 		if(needSave)
