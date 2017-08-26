@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Statistic;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -49,7 +50,10 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	
 	private HashMap<UUID, BlockedPlayer> blockedPlayers;
 	private HashMap<UUID, Long> recentlyWarned;
+	private HashMap<UUID, Long> combatPlayers;
 	private HashSet<UUID> invisiblePlayers;
+	
+	private HashMap<UUID, PvPPlayer> players;
 	
 	private PotionEffectType[] blockedPotionList = new PotionEffectType[]
 			{
@@ -72,6 +76,7 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	private long newPlayerBuffer; private String _newPlayerBuffer = "Buffers.New players";
 	
 	private boolean allowNewbieCancel; private String _newbieCancel = "Settings.Allow new players to remove protection";
+	private boolean safeInvisible; private String _safeInvisible = "Settings.Invisible players are safe from pvp";
 	
 		
 	private void loadConfig(){
@@ -83,10 +88,12 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		newPlayerBuffer = config.getLong(_newPlayerBuffer, 3600);
 		
 		allowNewbieCancel = config.getBoolean(_newbieCancel, true);
+		safeInvisible = config.getBoolean(_safeInvisible, true);
 		
 		outConfig.set(_tpBuffer, tpBuffer);
 		outConfig.set(_newPlayerBuffer, newPlayerBuffer);
 		outConfig.set(_newbieCancel, allowNewbieCancel);
+		outConfig.set(_safeInvisible, safeInvisible);
 		
 		saveConfig(outConfig, configPath);
 		
@@ -112,6 +119,10 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		
 		blockedPlayers = NewbieStorage.loadStorage();
 		recentlyWarned = new HashMap<UUID, Long>();
+		invisiblePlayers = new HashSet<UUID>();
+		combatPlayers = new HashMap<UUID, Long>();
+		
+		players = new HashMap<UUID, PvPPlayer>();
 		
 		manager.registerEvents(this, this);
 		
@@ -123,7 +134,6 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		PluginDescriptionFile pdfFile = this.getDescription();
 		logger.info(pdfFile.getName() + " Has Been Disabled!");
 		saveConfig(outConfig, configPath);
-
 	}
 	
 	@Override
@@ -169,6 +179,14 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			NewbieStorage.addNewbie(event.getPlayer().getUniqueId(), newPlayerBuffer);
 			addToBlocked(event.getPlayer().getUniqueId(), newPlayerBuffer, BlockedReason.NewPlayer);
 		}
+		
+		PvPPlayer player = new PvPPlayer(event.getPlayer().getUniqueId(), event.getPlayer().hasPotionEffect(PotionEffectType.INVISIBILITY));
+		long playTime = (event.getPlayer().getStatistic(Statistic.PLAY_ONE_TICK) / 20) * 1000;
+		if(System.currentTimeMillis() - playTime < 1000 * 60 * 60 * 6){
+			player.setReason(BlockedReason.NewPlayer, System.currentTimeMillis() + newPlayerBuffer);
+		}
+		
+		players.put(event.getPlayer().getUniqueId(), player);
 	}
 	
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -198,11 +216,6 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			return;
 		}
 		
-		//don't try stopping admins from hurting people
-		if(attacker.hasPermission("pvpmoderator.admin")){
-			return;
-		}
-		
 		if(shouldCancel(defender, attacker)){
 			event.setCancelled(true);
 			event.setDamage(0);
@@ -213,28 +226,29 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onSplash(PotionSplashEvent e)
 	{
-		//only care if a player threw something
-		if(e.getEntity().getShooter() instanceof Player)
-		{
-			Player thrower = (Player) e.getEntity().getShooter();
-			if(thrower.hasPermission("pvpmoderator.admin"))
-				return;
-			
-			List<PotionEffectType> list = Arrays.asList(blockedPotionList);
-			for(LivingEntity thing : e.getAffectedEntities())
-			{	
-				if(thing instanceof Player)
+		Player thrower = (e.getEntity().getShooter() instanceof Player) ?
+				(Player) e.getEntity().getShooter() :
+				null;
+		
+		List<PotionEffectType> badList = Arrays.asList(blockedPotionList);
+		for(LivingEntity thing : e.getAffectedEntities())
+		{	
+			if(thing instanceof Player)
+			{
+				Player hit = (Player) thing;
+				for(PotionEffect effect : e.getPotion().getEffects())
 				{
-					Player hit = (Player) thing;
-					for(PotionEffect effect : e.getPotion().getEffects())
-					{
-						if(shouldCancel(hit, thrower) && list.contains(effect.getType()))
-						{							
+					if(effect.getType() == PotionEffectType.INVISIBILITY){
+						handleInvisible(hit);
+					}
+					else if(badList.contains(effect.getType()))
+					{			
+						if(shouldCancel(hit, thrower)){
 							e.setIntensity(hit, -1);
 							sendWarningIfNeeded(hit, thrower);
 						}
-					}					
-				}
+					}
+				}					
 			}
 		}
 	}
@@ -256,7 +270,7 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			if(meta instanceof PotionMeta){
 				for(PotionEffect pe : ((PotionMeta) meta).getCustomEffects()){
 					if(pe.getType() == PotionEffectType.INVISIBILITY){
-						invisiblePlayers.add(player.getUniqueId());
+						handleInvisible(player);
 					}
 				}
 			}
@@ -271,9 +285,13 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		Player player = event.getPlayer();
 		if(invisiblePlayers.contains(player.getUniqueId())){
 			if(player.getPotionEffect(PotionEffectType.INVISIBILITY) == null){
-				invisiblePlayers.remove(player.getUniqueId());
+				handleNoLongerInvisible(player);
 			}
 		}
+	}
+	
+	private void handleInvisible(Player p){
+		
 	}
 	
 	private void handleNoLongerInvisible(Player p){
@@ -303,12 +321,22 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		}
 	}
 	
-	private boolean shouldCancel(Player vic, Player perp){		
+	private boolean shouldCancel(Player vic, Player perp){
+		//don't cancel for admins
+		if(perp != null && perp.hasPermission("pvpmoderator.admin"))
+			return false;
 		return isPlayerProtected(vic) || isPlayerProtected(perp); //block if either vic or perp should have pvp cancelled
 	}
 	
 	private boolean isPlayerProtected(Player p){
-		BlockedPlayer bp = blockedPlayers.get(p.getUniqueId());		
+		if(p == null)
+			return false;
+		
+		if(invisiblePlayers.contains(p.getUniqueId())){
+			return true;
+		}
+		
+		BlockedPlayer bp = blockedPlayers.get(p.getUniqueId());
 		
 		if(bp != null){
 			if(bp.time <= System.currentTimeMillis())
