@@ -2,6 +2,7 @@ package me.becja10.PvPModerator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.command.Command;
@@ -32,6 +34,7 @@ import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
@@ -42,6 +45,11 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import Listeners.InvisibleListener;
+import Managers.PvPPlayerManager;
+
 
 public class PvPModerator extends JavaPlugin implements Listener{
 
@@ -51,9 +59,12 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	private HashMap<UUID, BlockedPlayer> blockedPlayers;
 	private HashMap<UUID, Long> recentlyWarned;
 	private HashMap<UUID, Long> combatPlayers;
-	private HashSet<UUID> invisiblePlayers;
+	public ArrayList<UUID> invisiblePlayers;
+	public ArrayList<UUID> invisibleCooldown;
+	public ArrayList<PvPPlayer> players;
 	
-	private HashMap<UUID, PvPPlayer> players;
+	public PvPPlayerManager pvPPlayerManager;
+	public InvisibleListener invisibleListener;
 	
 	private PotionEffectType[] blockedPotionList = new PotionEffectType[]
 			{
@@ -71,6 +82,8 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	private FileConfiguration config;
 	private FileConfiguration outConfig;
 	
+	public int invisibleCooldownTime = 10000;
+	
 	//Config Settings
 	private long tpBuffer; private String _tpBuffer = "Buffers.Teleport";
 	private long newPlayerBuffer; private String _newPlayerBuffer = "Buffers.New players";
@@ -78,7 +91,17 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	private boolean allowNewbieCancel; private String _newbieCancel = "Settings.Allow new players to remove protection";
 	private boolean safeInvisible; private String _safeInvisible = "Settings.Invisible players are safe from pvp";
 	
-		
+	public PvPModerator() {
+		instance = this;
+	}
+
+	public static PvPModerator getInstance() {
+		return instance;
+	}	
+	
+	
+
+	
 	private void loadConfig(){
 		configPath = this.getDataFolder().getAbsolutePath() + File.separator + "config.yml";
 		config = YamlConfiguration.loadConfiguration(new File(configPath));
@@ -109,6 +132,10 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	
 	@Override
 	public void onEnable(){
+		
+		Bukkit.getServer().getPluginManager().registerEvents(new InvisibleListener(), this);
+		pvPPlayerManager = new PvPPlayerManager();
+		
 		PluginDescriptionFile pdfFile = this.getDescription();
 		PluginManager manager = getServer().getPluginManager();
 
@@ -119,14 +146,17 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		
 		blockedPlayers = NewbieStorage.loadStorage();
 		recentlyWarned = new HashMap<UUID, Long>();
-		invisiblePlayers = new HashSet<UUID>();
+		invisiblePlayers = new ArrayList<UUID>();
+		invisibleCooldown = new ArrayList<UUID>();
 		combatPlayers = new HashMap<UUID, Long>();
 		
-		players = new HashMap<UUID, PvPPlayer>();
+		players = new ArrayList<PvPPlayer>();
 		
 		manager.registerEvents(this, this);
 		
-		loadConfig();		
+		loadConfig();	
+		
+		//new removeInvisplayer().runTaskTimer(this, 20, 10);
 	}
 		
 	@Override
@@ -186,8 +216,18 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			player.setReason(BlockedReason.NewPlayer, System.currentTimeMillis() + newPlayerBuffer);
 		}
 		
-		players.put(event.getPlayer().getUniqueId(), player);
+		players.add(player);
 	}
+	
+    @EventHandler
+    public void onPlayerLeave(PlayerQuitEvent event) {
+    	PvPPlayer pp = pvPPlayerManager.getPvPPlayerObject(event.getPlayer().getUniqueId());
+        if (pp != null){
+        	pp.set_CooldownActivate(false);
+        	pp.set_isInvisible(false);
+        	players.remove(pvPPlayerManager.getPvPPlayerObject(event.getPlayer().getUniqueId()));
+        }
+    }
 	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onTP(PlayerTeleportEvent event){
@@ -216,6 +256,30 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			return;
 		}
 		
+		if(invisiblePlayers.contains(attacker.getUniqueId())){
+			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst invisible.");
+			event.setDamage(0);
+			event.setCancelled(true);
+		}
+		
+		if(invisibleCooldown.contains(attacker.getUniqueId())){
+			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst on cooldown from being invisible");
+			event.setDamage(0);
+			event.setCancelled(true);
+		}
+		
+		if(invisiblePlayers.contains(defender.getUniqueId())){
+			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst other player is invisible.");
+			event.setDamage(0);
+			event.setCancelled(true);
+		}
+		
+		if(invisibleCooldown.contains(defender.getUniqueId())){
+			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst other player is on cooldown from being invisible.");
+			event.setDamage(0);
+			event.setCancelled(true);
+		}
+		
 		if(shouldCancel(defender, attacker)){
 			event.setCancelled(true);
 			event.setDamage(0);
@@ -223,78 +287,13 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		}
 	}
 	
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onSplash(PotionSplashEvent e)
-	{
-		Player thrower = (e.getEntity().getShooter() instanceof Player) ?
-				(Player) e.getEntity().getShooter() :
-				null;
-		
-		List<PotionEffectType> badList = Arrays.asList(blockedPotionList);
-		for(LivingEntity thing : e.getAffectedEntities())
-		{	
-			if(thing instanceof Player)
-			{
-				Player hit = (Player) thing;
-				for(PotionEffect effect : e.getPotion().getEffects())
-				{
-					if(effect.getType() == PotionEffectType.INVISIBILITY){
-						handleInvisible(hit);
-					}
-					else if(badList.contains(effect.getType()))
-					{			
-						if(shouldCancel(hit, thrower)){
-							e.setIntensity(hit, -1);
-							sendWarningIfNeeded(hit, thrower);
-						}
-					}
-				}					
-			}
+
+	private void sendWarning(Player p, String msg) {
+		Long vt = recentlyWarned.get(p.getUniqueId());
+		if(vt == null || vt <= System.currentTimeMillis()){
+			recentlyWarned.put(p.getUniqueId(), System.currentTimeMillis() + 3000);
+			p.sendMessage(msg);
 		}
-	}
-	
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onConsumeEvent(PlayerItemConsumeEvent event){
-		if(event.isCancelled())
-			return;
-		ItemStack item = event.getItem();
-		Player player = event.getPlayer();
-		switch(item.getType()){
-		case MILK_BUCKET:
-			if(invisiblePlayers.contains(player.getUniqueId())){
-				handleNoLongerInvisible(player);
-			}
-			break;
-		case POTION:
-			ItemMeta meta = item.getItemMeta();
-			if(meta instanceof PotionMeta){
-				for(PotionEffect pe : ((PotionMeta) meta).getCustomEffects()){
-					if(pe.getType() == PotionEffectType.INVISIBILITY){
-						handleInvisible(player);
-					}
-				}
-			}
-			break;
-		default:
-			break;
-		}
-	}
-	
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onMove(PlayerMoveEvent event){
-		Player player = event.getPlayer();
-		if(invisiblePlayers.contains(player.getUniqueId())){
-			if(player.getPotionEffect(PotionEffectType.INVISIBILITY) == null){
-				handleNoLongerInvisible(player);
-			}
-		}
-	}
-	
-	private void handleInvisible(Player p){
-		
-	}
-	
-	private void handleNoLongerInvisible(Player p){
 		
 	}
 	
@@ -312,6 +311,7 @@ public class PvPModerator extends JavaPlugin implements Listener{
 					perp.sendMessage(v.getWarnMessage(false, v));
 			}
 		}
+		
 		if(p != null){
 			Long pt = recentlyWarned.get(perp.getUniqueId());
 			if(pt == null || pt <= System.currentTimeMillis()){
@@ -332,9 +332,7 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		if(p == null)
 			return false;
 		
-		if(invisiblePlayers.contains(p.getUniqueId())){
-			return true;
-		}
+
 		
 		BlockedPlayer bp = blockedPlayers.get(p.getUniqueId());
 		
