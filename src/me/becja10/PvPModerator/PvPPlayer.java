@@ -18,8 +18,6 @@ public class PvPPlayer {
 	private long _InvisibleCooldown;
 	private boolean _CooldownActivate;
 
-	private boolean _isBlocked;
-	private long _unblockedTime;
 	private BlockedReason _reason;
 
 	public PvPPlayer(UUID id, boolean invisible) {
@@ -27,8 +25,8 @@ public class PvPPlayer {
 
 		set_isInvisible(invisible);
 
-		_inCombat = _isBlocked = false;
-		_combatStarted = _unblockedTime = 0L;
+		_inCombat = false;
+		_combatStarted = 0L;
 
 	}
 

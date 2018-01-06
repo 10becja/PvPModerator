@@ -28,7 +28,7 @@ public class InvisibleListener implements Listener {
 		delayCheck(p);
 	}
 
-	public void delayCheck(Player p) {
+	public void delayCheck(final Player p) {
 		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(PvPModerator.getInstance(), new Runnable() {
 			public void run() {
 				PvPPlayer pp = PvPModerator.getInstance().pvPPlayerManager.getPvPPlayerObject(p.getUniqueId());

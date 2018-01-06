@@ -3,10 +3,7 @@ package me.becja10.PvPModerator;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -22,7 +19,6 @@ import org.bukkit.entity.Egg;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FishHook;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.entity.ThrownPotion;
@@ -30,23 +26,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.PotionSplashEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
-
 import Listeners.InvisibleListener;
 import Managers.PvPPlayerManager;
 
@@ -65,18 +52,6 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	
 	public PvPPlayerManager pvPPlayerManager;
 	public InvisibleListener invisibleListener;
-	
-	private PotionEffectType[] blockedPotionList = new PotionEffectType[]
-			{
-			PotionEffectType.POISON,
-			PotionEffectType.BLINDNESS,
-			PotionEffectType.CONFUSION,
-			PotionEffectType.HARM,
-			PotionEffectType.HUNGER,
-			PotionEffectType.WEAKNESS,
-			PotionEffectType.SLOW
-			};
-
 	
 	private String configPath;
 	private FileConfiguration config;
