@@ -31,8 +31,10 @@ public class InvisibleListener implements Listener {
 	public void delayCheck(final Player p) {
 		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(PvPModerator.getInstance(), new Runnable() {
 			public void run() {
-				PvPPlayer pp = PvPModerator.getInstance().pvPPlayerManager.getPvPPlayerObject(p.getUniqueId());
-				pp.set_isInvisible(p.getPlayer().hasPotionEffect(PotionEffectType.INVISIBILITY));
+				if(p != null){
+					PvPPlayer pp = PvPModerator.getInstance().pvPPlayerManager.getPvPPlayerObject(p.getUniqueId());
+					pp.set_isInvisible(p.getPlayer().hasPotionEffect(PotionEffectType.INVISIBILITY));
+				}
 
 			}
 		}, 10L);
