@@ -1,6 +1,10 @@
 package Listeners;
 
+import me.becja10.PvPModerator.PvPModerator;
+import me.becja10.PvPModerator.PvPPlayer;
+
 import org.bukkit.Bukkit;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -8,9 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.potion.PotionEffectType;
-
-import me.becja10.PvPModerator.PvPModerator;
-import me.becja10.PvPModerator.PvPPlayer;
 
 public class InvisibleListener implements Listener {
 
@@ -24,8 +25,10 @@ public class InvisibleListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onSplash(PotionSplashEvent e) {
-		Player p = (e.getEntity().getShooter() instanceof Player) ? (Player) e.getEntity().getShooter() : null;
-		delayCheck(p);
+		for(LivingEntity hit : e.getAffectedEntities()){
+			if(hit instanceof Player)
+				delayCheck((Player) hit);
+		}
 	}
 
 	public void delayCheck(final Player p) {

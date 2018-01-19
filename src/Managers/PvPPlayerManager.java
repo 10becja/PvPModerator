@@ -2,8 +2,6 @@ package Managers;
 
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
-
 import me.becja10.PvPModerator.PvPModerator;
 import me.becja10.PvPModerator.PvPPlayer;
 

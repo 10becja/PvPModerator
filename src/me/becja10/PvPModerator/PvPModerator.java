@@ -2,8 +2,8 @@ package me.becja10.PvPModerator;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -34,6 +34,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffectType;
+
 import Listeners.InvisibleListener;
 import Managers.PvPPlayerManager;
 
@@ -45,10 +46,10 @@ public class PvPModerator extends JavaPlugin implements Listener{
 	
 	private HashMap<UUID, BlockedPlayer> blockedPlayers;
 	private HashMap<UUID, Long> recentlyWarned;
-	private HashMap<UUID, Long> combatPlayers;
-	public ArrayList<UUID> invisiblePlayers;
-	public ArrayList<UUID> invisibleCooldown;
-	public ArrayList<PvPPlayer> players;
+//	private HashMap<UUID, Long> combatPlayers;
+	public HashSet<UUID> invisiblePlayers;
+	public HashSet<UUID> invisibleCooldown;
+	public HashSet<PvPPlayer> players;
 	
 	public PvPPlayerManager pvPPlayerManager;
 	public InvisibleListener invisibleListener;
@@ -121,11 +122,11 @@ public class PvPModerator extends JavaPlugin implements Listener{
 		
 		blockedPlayers = NewbieStorage.loadStorage();
 		recentlyWarned = new HashMap<UUID, Long>();
-		invisiblePlayers = new ArrayList<UUID>();
-		invisibleCooldown = new ArrayList<UUID>();
-		combatPlayers = new HashMap<UUID, Long>();
+		invisiblePlayers = new HashSet<UUID>();
+		invisibleCooldown = new HashSet<UUID>();
+//		combatPlayers = new HashMap<UUID, Long>();
 		
-		players = new ArrayList<PvPPlayer>();
+		players = new HashSet<PvPPlayer>();
 		
 		manager.registerEvents(this, this);
 		

@@ -25,6 +25,8 @@ public class BlockedPlayer {
 			case TPEvent:
 				ret = ChatColor.GREEN + "You've recently teleported and must wait before fighting.";
 				break;
+			default:
+				break;
 			}
 		}
 		else{
@@ -39,6 +41,8 @@ public class BlockedPlayer {
 					break;
 				case TPEvent:
 					ret = ChatColor.RED + "This player is in tp cooldown. You can't attack them yet.";
+					break;
+				default:
 					break;
 				}
 			}

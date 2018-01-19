@@ -11,8 +11,8 @@ public class PvPPlayer {
 
 	private UUID _id;
 
-	private boolean _inCombat;
-	private long _combatStarted;
+//	private boolean _inCombat;
+//	private long _combatStarted;
 
 	private boolean _isInvisible;
 	private long _InvisibleCooldown;
@@ -25,8 +25,8 @@ public class PvPPlayer {
 
 		set_isInvisible(invisible);
 
-		_inCombat = false;
-		_combatStarted = 0L;
+//		_inCombat = false;
+//		_combatStarted = 0L;
 
 	}
 
@@ -46,6 +46,8 @@ public class PvPPlayer {
 			case TPEvent:
 				ret = ChatColor.GREEN + "You've recently teleported and must wait before fighting.";
 				break;
+			default:
+				break;
 			}
 		} else {
 			if (vic == null) {
@@ -58,6 +60,8 @@ public class PvPPlayer {
 					break;
 				case TPEvent:
 					ret = ChatColor.RED + "This player is in tp cooldown. You can't attack them yet.";
+					break;
+				default:
 					break;
 				}
 			}
