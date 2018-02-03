@@ -232,26 +232,41 @@ public class PvPModerator extends JavaPlugin implements Listener{
 			return;
 		}
 		
+		//if for some reason they are invisible but not in the list, add them to the list
+		if(!invisibleCooldown.contains(attacker.getUniqueId()) && attacker.hasPotionEffect(PotionEffectType.INVISIBILITY)){
+			PvPPlayer pp = pvPPlayerManager.getPvPPlayerObject(attacker.getUniqueId());
+	        if (pp != null){
+	        	pp.set_isInvisible(true);
+	        }
+		}
+		
+		if(!invisiblePlayers.contains(defender.getUniqueId()) && defender.hasPotionEffect(PotionEffectType.INVISIBILITY)){
+			PvPPlayer pp = pvPPlayerManager.getPvPPlayerObject(defender.getUniqueId());
+	        if (pp != null){
+	        	pp.set_isInvisible(true);
+	        }
+		}
+		
 		if(invisiblePlayers.contains(attacker.getUniqueId())){
-			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst invisible.");
+			sendWarning(attacker,ChatColor.RED + "You cannot pvp whilst invisible.");
 			event.setDamage(0);
 			event.setCancelled(true);
 		}
 		
 		if(invisibleCooldown.contains(attacker.getUniqueId())){
-			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst on cooldown from being invisible");
+			sendWarning(attacker,ChatColor.RED + "You cannot pvp whilst on cooldown from being invisible");
 			event.setDamage(0);
 			event.setCancelled(true);
 		}
 		
 		if(invisiblePlayers.contains(defender.getUniqueId())){
-			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst other player is invisible.");
+			sendWarning(attacker,ChatColor.RED + "You cannot pvp whilst other player is invisible.");
 			event.setDamage(0);
 			event.setCancelled(true);
 		}
 		
 		if(invisibleCooldown.contains(defender.getUniqueId())){
-			sendWarning(attacker,ChatColor.GREEN + "You cannot pvp whilst other player is on cooldown from being invisible.");
+			sendWarning(attacker,ChatColor.RED + "You cannot pvp whilst other player is on cooldown from being invisible.");
 			event.setDamage(0);
 			event.setCancelled(true);
 		}
